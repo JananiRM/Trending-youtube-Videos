@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trending YouTube Videos</title>
+    <link rel="stylesheet" type="text/css" href="/static/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Trending YouTube Videos</h1>
+        <p>This website provides details of YouTube videos trending in a specific country.</p>
+        <label for="country-name">Enter the country name to get the trending videos on YouTube:</label>
+        <input type="text" id="country-name" placeholder="India" value="India">
+        <p>Click the button <span class="emoji">👇</span></p>
+        <button class="animated-button" onclick="fetchVideos()">Show Trending Videos</button>
+        <div id="video-container"></div>
+    </div>
+
+    <script>
+        const countryNames = [
+            "Afghanistan", "Albania", "Algeria", "Andorra", "Angola", "Antigua and Barbuda", "Argentina", "Armenia", "Australia",
+            "Austria", "Azerbaijan", "Bahamas", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin",
+            "Bhutan", "Bolivia", "Bosnia and Herzegovina", "Botswana", "Brazil", "Brunei", "Bulgaria", "Burkina Faso", "Burundi",
+            "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Central African Republic", "Chad", "Chile", "China", "Colombia",
+            "Comoros", "Congo (Congo-Brazzaville)", "Costa Rica", "Croatia", "Cuba", "Cyprus", "Czech Republic", "Denmark",
+            "Djibouti", "Dominica", "Dominican Republic", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea",
+            "Estonia", "Eswatini", "Ethiopia", "Fiji", "Finland", "France", "Gabon", "Gambia", "Georgia", "Germany", "Ghana",
+            "Greece", "Grenada", "Guatemala", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Honduras", "Hungary", "Iceland",
+            "India", "Indonesia", "Iran", "Iraq", "Ireland", "Israel", "Italy", "Jamaica", "Japan", "Jordan", "Kazakhstan", "Kenya",
+            "Kiribati", "Kuwait", "Kyrgyzstan", "Laos", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein",
+            "Lithuania", "Luxembourg", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands",
+            "Mauritania", "Mauritius", "Mexico", "Micronesia", "Moldova", "Monaco", "Mongolia", "Montenegro", "Morocco",
+            "Mozambique", "Myanmar (Burma)", "Namibia", "Nauru", "Nepal", "Netherlands", "New Zealand", "Nicaragua", "Niger",
+            "Nigeria", "North Korea", "North Macedonia", "Norway", "Oman", "Pakistan", "Palau", "Palestine State", "Panama",
+            "Papua New Guinea", "Paraguay", "Peru", "Philippines", "Poland", "Portugal", "Qatar", "Romania", "Russia", "Rwanda",
+            "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe",
+            "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Slovakia", "Slovenia", "Solomon Islands",
+            "Somalia", "South Africa", "South Korea", "South Sudan", "Spain", "Sri Lanka", "Sudan", "Suriname", "Sweden",
+            "Switzerland", "Syria", "Taiwan", "Tajikistan", "Tanzania", "Thailand", "Timor-Leste", "Togo", "Tonga", "Trinidad and Tobago",
+            "Tunisia", "Turkey", "Turkmenistan", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates", "United Kingdom", "United States",
+            "Uruguay", "Uzbekistan", "Vanuatu", "Vatican City", "Venezuela", "Vietnam", "Yemen", "Zambia", "Zimbabwe"
+        ];
+
+        $(function() {
+            $("#country-name").autocomplete({
+                source: countryNames
+            });
+        });
+
+        let videoData = [];
+
+        function fetchVideos() {
+            const countryName = document.getElementById('country-name').value;
+            fetch(`/get_videos?country_name=${encodeURIComponent(countryName)}`)
+                .then(response => response.json())
+                .then(data => {
+                    videoData = data;
+                    const videoContainer = document.getElementById('video-container');
+                    videoContainer.innerHTML = '';  // Clear previous content
+                    videoData.forEach(video => {
+                        const videoElement = document.createElement('div');
+                        videoElement.innerHTML = `
+                            <div class="video-title" onclick="fetchVideoDetails('${video.id}')">
+                                ${video.snippet.title}
+                            </div>
+                        `;
+                        videoContainer.appendChild(videoElement);
+                    });
+                })
+                .catch(error => console.error('Error fetching videos:', error));
+        }
+
+        function fetchVideoDetails(videoId) {
+            fetch(`/get_video_details/${videoId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const videoContainer = document.getElementById('video-container');
+                    const videoDetails = document.createElement('div');
+                    videoDetails.className = 'video-details';
+                    videoDetails.innerHTML = `
+                        <h2>${data.snippet.title}</h2>
+                        <p><strong>Description:</strong> ${data.snippet.description}</p>
+                        <p><strong>Channel:</strong> ${data.snippet.channelTitle}</p>
+                        <p><strong>Views:</strong> ${data.statistics.viewCount}</p>
+                        <p><strong>Published At:</strong> ${data.snippet.publishedAt}</p>
+                        <p><strong>Duration:</strong> ${data.contentDetails.duration}</p>
+                        <p><strong>Likes:</strong> ${data.statistics.likeCount}</p>
+                        <p><strong>Dislikes:</strong> ${data.statistics.dislikeCount}</p>
+                        <p><strong>Comments:</strong> ${data.statistics.commentCount}</p>
+                        <iframe width="560" height="315" src="https://www.youtube.com/embed/${data.id}" frameborder="0" allowfullscreen></iframe>
+                    `;
+                    // Clear any previous video details
+                    videoContainer.querySelectorAll('.video-details').forEach(el => el.remove());
+                    videoContainer.appendChild(videoDetails);
+                    videoDetails.style.display = 'block';
+                })
+                .catch(error => console.error('Error fetching video details:', error));
+        }
+
+    </script>
+</body>
+</html>
